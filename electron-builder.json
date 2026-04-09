@@ -1,0 +1,30 @@
+{
+  "appId": "com.lowcarbon.app",
+  "productName": "LowCarbonApp",
+  "copyright": "Copyright © 2026 Low Carbon App",
+  "directories": {
+    "output": "dist-electron"
+  },
+  "files": [
+    "dist/**/*",
+    "electron.js",
+    "preload.js"
+  ],
+  "mac": {
+    "category": "public.app-category.lifestyle"
+  },
+  "win": {
+    "sign": false,
+    "target": [
+      "nsis",
+      "portable"
+    ]
+  },
+  "linux": {
+    "target": [
+      "deb",
+      "rpm",
+      "AppImage"
+    ]
+  }
+}

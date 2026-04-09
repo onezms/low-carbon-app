@@ -1,0 +1,36 @@
+{
+  "name": "vue",
+  "private": true,
+  "version": "0.0.0",
+  "description": "低碳生活管家应用",
+  "author": "低碳生活管家团队",
+  "main": "electron.js",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "electron:build": "electron-builder",
+    "electron:dev": "electron .",
+    "capacitor:init": "npx cap init vue低碳生活管家 com.lowcarbon.app --web-dir=dist",
+    "capacitor:add:android": "npx cap add android",
+    "capacitor:build:android": "npx cap build android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.3.0",
+    "@capacitor/cli": "^8.3.0",
+    "@capacitor/core": "^8.3.0",
+    "echarts": "^6.0.0",
+    "element-plus": "^2.13.6",
+    "sqlite3": "^6.0.1",
+    "vue": "^3.5.32",
+    "vue-router": "^4.6.4"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.5",
+    "cross-env": "^10.1.0",
+    "electron": "^41.0.0",
+    "electron-builder": "^26.0.0",
+    "vite": "^8.0.4"
+  }
+}
