@@ -1,7 +1,7 @@
-﻿﻿<template>
+﻿<template>
   <div class="rank-container">
     <el-row :gutter="20" class="top-three-row">
-      <el-col :span="8" v-for="(item,index) in topThree" :key="item.user_id">   
+      <el-col :span="8" v-for="(item,index) in topThree" :key="item.user_id">
         <el-card class="top-card" :class="'top-'+(index+1)">
           <div class="rank-num">{{ index===0?'🥇':index===1?'🥈':'🥉' }}</div>
           <div class="avatar">{{ item.nickname?.charAt(0) || '?' }}</div>
@@ -16,7 +16,7 @@
         <div style="font-weight:bold">完整排行</div>
       </template>
       <el-table :data="rankList" stripe>
-        <el-table-column type="index" label="排名" width="80" align="center"> 
+        <el-table-column type="index" label="排名" width="80" align="center">
           <template #default="{$index}">
             <span v-if="$index<3">{{ $index===0?'金牌':$index===1?'银牌':'铜牌' }}</span>
             <span v-else>{{ $index+1 }}</span>
@@ -30,7 +30,7 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="total_point" label="积分"></el-table-column>    
+        <el-table-column prop="total_point" label="积分"></el-table-column>
         <el-table-column prop="total_carbon" label="减碳 (kg)"></el-table-column>
         <el-table-column prop="check_days" label="打卡天数"></el-table-column>
       </el-table>
