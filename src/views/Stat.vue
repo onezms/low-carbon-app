@@ -2,19 +2,19 @@
   <div class="stat-container">
     <el-row :gutter="20">
       <el-col :span="24">
-        <el-card class="chart-card" title="æœˆåº¦å‡ç¢³è¶‹åŠ¿">
+        <el-card class="chart-card" title="ÔÂ¶È¼õÌ¼Ç÷ÊÆ">
           <div ref="lineChart" style="width:100%;height:400px;"></div>
         </el-card>
       </el-col>
     </el-row>
     <el-row :gutter="20" style="margin-top:20px;">
       <el-col :span="12">
-        <el-card class="chart-card" title="ç¢³æŽ’æ”¾åˆ†ç±»å æ¯”">
+        <el-card class="chart-card" title="Ì¼ÅÅ·Å·ÖÀàÕ¼±È">
           <div ref="pieChart" style="width:100%;height:350px;"></div>
         </el-card>
       </el-col>
       <el-col :span="12">
-        <el-card class="chart-card" title="æ¯æ—¥å‡ç¢³å¯¹æ¯”">
+        <el-card class="chart-card" title="Ã¿ÈÕ¼õÌ¼¶Ô±È">
           <div ref="barChart" style="width:100%;height:350px;"></div>
         </el-card>
       </el-col>
@@ -32,26 +32,115 @@ const lineChart = ref(null)
 const pieChart = ref(null)
 const barChart = ref(null)
 
-const chartData = {
-  line: { months: ['1æœˆ','2æœˆ','3æœˆ','4æœˆ','5æœˆ','6æœˆ'], data: [12, 19, 3, 5, 2, 30] },
-  pie: [
-    {value: 1048, name: 'å‡ºè¡Œ'},
-    {value: 735, name: 'å±…å®¶èƒ½è€—'},
-    {value: 580, name: 'é¤é¥®'},
-    {value: 484, name: 'å…¶ä»–'}
-  ],
-  bar: { days: ['å‘¨ä¸€','å‘¨äºŒ','å‘¨ä¸‰','å‘¨å››','å‘¨äº”','å‘¨å…­','å‘¨æ—¥'], data: [5, 20, 36, 10, 10, 20, 30] }
+const chartData = ref({
+  line: { months: [], data: [] },
+  pie: [],
+  bar: { days: [], data: [] }
+})
+
+// »ñÈ¡ÔÂ¶È¼õÌ¼Êý¾Ý
+const getMonthlyCarbonData = () => {
+  return new Promise((resolve) => {
+    const now = new Date()
+    const months = []
+    const data = []
+    
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      const year = date.getFullYear()
+      const month = date.getMonth() + 1
+      const monthStr = month + 'ÔÂ'
+      months.push(monthStr)
+      
+      const startDate = year + '-' + String(month).padStart(2, '0') + '-01'
+      const endMonth = month + 1
+      const endDate = year + '-' + String(endMonth).padStart(2, '0') + '-01'
+      
+      db.all('SELECT SUM(carbon_reduce) as total FROM carbon_record WHERE user_id = ? AND create_time >= ? AND create_time < ?',
+        [userId.value, startDate, endDate],
+        (err, rows) => {
+          const total = rows[0] && rows[0].total ? parseFloat(rows[0].total) : 0
+          data.push(total)
+          
+          if (data.length === 6) {
+            resolve({ months, data })
+          }
+        }
+      )
+    }
+  })
+}
+
+// »ñÈ¡Ì¼ÅÅ·Å·ÖÀàÊý¾Ý
+const getCarbonCategoryData = () => {
+  return new Promise((resolve) => {
+    db.all('SELECT record_type, SUM(carbon_output) as total_output FROM carbon_record WHERE user_id = ? GROUP BY record_type',
+      [userId.value],
+      (err, rows) => {
+        if (rows && rows.length > 0) {
+          const pieData = rows.map(row => ({
+            value: row.total_output || 0,
+            name: row.record_type
+          }))
+          resolve(pieData)
+        } else {
+          resolve([
+            {value: 0, name: '³öÐÐ'},
+            {value: 0, name: '¾Ó¼ÒÄÜºÄ'},
+            {value: 0, name: '²ÍÒû'},
+            {value: 0, name: 'ÆäËû'}
+          ])
+        }
+      }
+    )
+  })
+}
+
+// »ñÈ¡Ã¿ÈÕ¼õÌ¼Êý¾Ý£¨×î½ü 7 Ìì£©
+const getDailyCarbonData = () => {
+  return new Promise((resolve) => {
+    const days = ['ÖÜÈÕ', 'ÖÜÒ»', 'ÖÜ¶þ', 'ÖÜÈý', 'ÖÜËÄ', 'ÖÜÎå', 'ÖÜÁù']
+    const dayLabels = []
+    const data = []
+    const now = new Date()
+    
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(now)
+      date.setDate(date.getDate() - i)
+      dayLabels.push(days[date.getDay()])
+      
+      const dateStr = date.toISOString().split('T')[0]
+      
+      db.all('SELECT SUM(carbon_reduce) as total FROM carbon_record WHERE user_id = ? AND date(create_time) = ?',
+        [userId.value, dateStr],
+        (err, rows) => {
+          const total = rows[0] && rows[0].total ? parseFloat(rows[0].total) : 0
+          data.push(total)
+          
+          if (data.length === 7) {
+            resolve({ days: dayLabels, data })
+          }
+        }
+      )
+    }
+  })
 }
 
 const initLineChart = () => {
   if(!lineChart.value) return
   const myChart = echarts.init(lineChart.value)
   myChart.setOption({
-    title: { text: 'æœˆåº¦å‡ç¢³é‡ï¼ˆkgCOâ‚‚ï¼‰' },
+    title: { text: 'ÔÂ¶È¼õÌ¼Á¿£¨kgCO?£©' },
     tooltip: { trigger: 'axis' },
-    xAxis: { type: 'category', data: chartData.line.months },
+    xAxis: { type: 'category', data: chartData.value.line.months },
     yAxis: { type: 'value' },
-    series: [{ data: chartData.line.data, type: 'line', smooth: true, areaStyle: { opacity: 0.3 } }]
+    series: [{ 
+      data: chartData.value.line.data, 
+      type: 'line', 
+      smooth: true, 
+      areaStyle: { opacity: 0.3 },
+      itemStyle: { color: '#16a34a' }
+    }]
   })
 }
 
@@ -59,9 +148,20 @@ const initPieChart = () => {
   if(!pieChart.value) return
   const myChart = echarts.init(pieChart.value)
   myChart.setOption({
-    title: { text: 'ç¢³æŽ’æ”¾æ¥æº', left: 'center' },
+    title: { text: 'Ì¼ÅÅ·ÅÀ´Ô´', left: 'center' },
     tooltip: { trigger: 'item' },
-    series: [{ type: 'pie', radius: '50%', data: chartData.pie }]
+    legend: { orient: 'vertical', left: 'left' },
+    series: [{ 
+      type: 'pie', 
+      radius: '50%', 
+      data: chartData.value.pie,
+      itemStyle: {
+        color: (params) => {
+          const colors = ['#16a34a', '#22c55e', '#059669', '#10b981']
+          return colors[params.dataIndex % colors.length]
+        }
+      }
+    }]
   })
 }
 
@@ -69,20 +169,38 @@ const initBarChart = () => {
   if(!barChart.value) return
   const myChart = echarts.init(barChart.value)
   myChart.setOption({
-    title: { text: 'æ¯æ—¥å‡ç¢³å¯¹æ¯”' },
+    title: { text: 'Ã¿ÈÕ¼õÌ¼¶Ô±È' },
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-    xAxis: { type: 'category', data: chartData.bar.days },
+    xAxis: { type: 'category', data: chartData.value.bar.days },
     yAxis: { type: 'value' },
-    series: [{ data: chartData.bar.data, type: 'bar', itemStyle: { color: '#16a34a' } }]
+    series: [{ 
+      data: chartData.value.bar.data, 
+      type: 'bar', 
+      itemStyle: { color: '#16a34a' } 
+    }]
   })
 }
 
-onMounted(() => {
+const loadAllData = async () => {
+  const [lineData, pieData, barData] = await Promise.all([
+    getMonthlyCarbonData(),
+    getCarbonCategoryData(),
+    getDailyCarbonData()
+  ])
+  
+  chartData.value.line = lineData
+  chartData.value.pie = pieData
+  chartData.value.bar = barData
+  
   setTimeout(() => {
     initLineChart()
     initPieChart()
     initBarChart()
   }, 100)
+}
+
+onMounted(() => {
+  loadAllData()
 })
 </script>
 

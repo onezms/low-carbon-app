@@ -4,31 +4,31 @@
     <el-row :gutter="20">
       <el-col :span="8">
         <el-card class="top-card" style="background: linear-gradient(135deg, #16a34a, #22c55e); color: white;">
-          <div class="card-title">å½“å‰æ€»ç§¯åˆ†</div>
+          <div class="card-title">µ±Ç°×Ü»ı·Ö</div>
           <div class="card-num">{{ userInfo.total_point || 0 }}</div>
         </el-card>
       </el-col>
       <el-col :span="8">
         <el-card class="top-card" style="background: linear-gradient(135deg, #059669, #10b981); color: white;">
-          <div class="card-title">ç´¯è®¡å‡ç¢³</div>
+          <div class="card-title">ÀÛ¼Æ¼õÌ¼</div>
           <div class="card-num">{{ (userInfo.total_carbon || 0).toFixed(2) }} kg</div>
         </el-card>
       </el-col>
       <el-col :span="8">
         <el-card class="top-card" style="background: linear-gradient(135deg, #047857, #059669); color: white;">
-          <div class="card-title">è¿ç»­æ‰“å¡</div>
-          <div class="card-num">{{ userInfo.check_days || 0 }} å¤©</div>
+          <div class="card-title">Á¬Ğø´ò¿¨</div>
+          <div class="card-num">{{ userInfo.check_days || 0 }} Ìì</div>
         </el-card>
       </el-col>
     </el-row>
 
-    <el-card class="list-card" title="ç§¯åˆ†æ˜ç»†" style="margin-top:20px;">
+    <el-card class="list-card" title="»ı·ÖÃ÷Ï¸" style="margin-top:20px;">    
       <el-table :data="pointList" stripe>
-        <el-table-column prop="create_time" label="æ—¶é—´" width="180"></el-table-column>
-        <el-table-column prop="sub_type" label="æ¥æº"></el-table-column>
-        <el-table-column prop="point" label="ç§¯åˆ†å˜åŒ–" width="120">
+        <el-table-column prop="create_time" label="Ê±¼ä" width="180"></el-table-column>
+        <el-table-column prop="sub_type" label="À´Ô´"></el-table-column>      
+        <el-table-column prop="point" label="»ı·Ö±ä»¯" width="120">
           <template #default="scope">
-            <span :style="{color: scope.row.point>0?'#16a34a':'#ef4444'}">
+            <span :style="{color: scope.row.point>0?'#16a34a':'#ef4444'}">      
               {{ scope.row.point>0 ? '+' : '' }}{{ scope.row.point }}
             </span>
           </template>
@@ -36,7 +36,7 @@
       </el-table>
     </el-card>
 
-    <el-card class="medal-card" title="æˆ‘çš„å‹‹ç« " style="margin-top:20px;">
+    <el-card class="medal-card" title="ÎÒµÄÑ«ÕÂ" style="margin-top:20px;">  
       <el-row :gutter="20">
         <el-col :span="6" v-for="medal in medals" :key="medal.id">
           <div class="medal-item">
@@ -54,30 +54,32 @@ import { ref, reactive, onMounted } from 'vue'
 import db from '../services/dbService.js'
 
 const userId = ref(localStorage.getItem('userId') || 1)
-const userInfo = reactive({ total_point:0, total_carbon:0, check_days:0 })
+const userInfo = reactive({ total_point:0, total_carbon:0, check_days:0 })      
 const pointList = ref([])
 
 const medals = ref([
-  {id:1,name:'ä½ç¢³æ–°æ‰‹',icon:'ğŸŒ±'},
-  {id:2,name:'ç»¿è‰²è¾¾äºº',icon:'ğŸŒ¿'},
-  {id:3,name:'ç¯ä¿å…ˆé”‹',icon:'ğŸŒ³'},
-  {id:4,name:'åœ°çƒå«å£«',icon:'ğŸŒ'}
+  {id:1,name:'µÍÌ¼ĞÂÊÖ',icon:'??'},
+  {id:2,name:'ÂÌÉ«´ïÈË',icon:'??'},
+  {id:3,name:'»·±£ÏÈ·æ',icon:'??'},
+  {id:4,name:'µØÇòÎÀÊ¿',icon:'??'}
 ])
 
 const getUserInfo = () => {
-  try {
-    db.get(`SELECT * FROM user WHERE user_id = ?`, [userId.value], (err, row) => {
-      if(row) Object.assign(userInfo, row)
-    })
-  } catch (e) {}
+  db.get('SELECT * FROM user WHERE user_id = ?', [userId.value], (err, row) => {
+    if(row) {
+      userInfo.total_point = row.total_point || 0
+      userInfo.total_carbon = row.total_carbon || 0
+      userInfo.check_days = row.check_days || 0
+    }
+  })
 }
 
 const getPointList = () => {
-  try {
-    db.all(`SELECT * FROM carbon_record WHERE user_id=?`, [userId.value], (err, rows) => {
-      if(rows) pointList.value = rows
-    })
-  } catch (e) {}
+  db.all('SELECT * FROM carbon_record WHERE user_id=? AND point > 0 ORDER BY create_time DESC LIMIT 50', [userId.value], (err, rows) => {
+    if(rows) {
+      pointList.value = rows
+    }
+  })
 }
 
 onMounted(() => {
