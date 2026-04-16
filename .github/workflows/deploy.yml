@@ -4,7 +4,11 @@ on:
   push:
     branches: [ master ]
   workflow_dispatch:
-<<<<<<< HEAD
+    inputs:
+      reason:
+        description: 'Reason for deployment'
+        required: false
+        default: 'Manual deployment'
 
 permissions:
   contents: read
@@ -14,13 +18,6 @@ permissions:
 concurrency:
   group: "pages"
   cancel-in-progress: false
-=======
-    inputs:
-      reason:
-        description: 'Reason for deployment'
-        required: false
-        default: 'Manual deployment'
->>>>>>> 332b2823c3b13109c51bf5bb2830067fb73a65b8
 
 jobs:
   deploy:
@@ -29,28 +26,18 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-<<<<<<< HEAD
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-=======
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
->>>>>>> 332b2823c3b13109c51bf5bb2830067fb73a65b8
           cache: 'npm'
 
       - name: Install dependencies
-<<<<<<< HEAD
         run: npm ci
 
       - name: Build
@@ -67,16 +54,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-=======
-        run: npm install
-        
-      - name: Build
-        run: npm run build
-        
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
-          force_orphan: true
->>>>>>> 332b2823c3b13109c51bf5bb2830067fb73a65b8
