@@ -40,7 +40,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import db from '../../services/dbService.js'
+import db from '../services/dbService.js'
 
 const topThree = ref([])
 const rankList = ref([])
