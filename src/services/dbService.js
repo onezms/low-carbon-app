@@ -1,5 +1,5 @@
-// 数据库服务层 - 浏览器兼容版本
-// 使用 localStorage 作为存储，适配网页应用
+// ���ݿ����� - ��������ݰ汾
+// ʹ�� localStorage ��Ϊ�洢��������ҳӦ��
 
 let dataPath = 'localStorage'
 
@@ -18,7 +18,7 @@ class BrowserDB {
   loadFromLocalStorage() {
     try {
       for (const table in this.tables) {
-        const data = localStorage.getItem(`low-carbon-${table}`)
+        const data = localStorage.getItem('low-carbon-' + table)
         if (data) {
           this.tables[table] = JSON.parse(data)
         }
@@ -31,7 +31,7 @@ class BrowserDB {
   saveToLocalStorage() {
     try {
       for (const table in this.tables) {
-        localStorage.setItem(`low-carbon-${table}`, JSON.stringify(this.tables[table]))
+        localStorage.setItem('low-carbon-' + table, JSON.stringify(this.tables[table]))
       }
     } catch (e) {
       console.error('Failed to save data to localStorage:', e)
@@ -51,7 +51,7 @@ class BrowserDB {
           const table = tableMatch[1]
           if (this.tables[table]) {
             const row = this.createRowFromParams(sql, params)
-            row[`${table}_id`] = this.getNextId(table)
+            row[table + '_id'] = this.getNextId(table)
             row.create_time = new Date().toISOString()
             this.tables[table].push(row)
             this.saveToLocalStorage()
@@ -328,21 +328,21 @@ class BrowserDB {
     const row = {}
     const columnsMatch = sql.match(/\(([^)]+)\)/)
     const valuesMatch = sql.match(/VALUES \(([^)]+)\)/)
-    
+
     if (columnsMatch && valuesMatch) {
       const columns = columnsMatch[1].split(',').map(c => c.trim())
       params.forEach((param, index) => {
         row[columns[index]] = param
       })
     }
-    
+
     return row
   }
 
   getNextId(table) {
     const rows = this.tables[table]
     if (rows.length === 0) return 1
-    return Math.max(...rows.map(r => r[`${table}_id`])) + 1
+    return Math.max(...rows.map(r => r[table + '_id'])) + 1
   }
 
   generateMockData() {

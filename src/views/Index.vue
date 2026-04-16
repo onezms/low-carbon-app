@@ -17,16 +17,23 @@
           <el-form :model="trafficForm" label-width="100px" :inline="true">
             <el-form-item label="出行方式">
               <el-select v-model="trafficForm.type" placeholder="请选择出行方式">
-                <el-option label="步行/自行车" value="walk" :coefficient="0" :point="5"></el-option>
-                <el-option label="公交/地铁" value="bus" :coefficient="0.04" :point="3"></el-option>
-                <el-option label="电动车" value="electric" :coefficient="0.02" :point="2"></el-option>
-                <el-option label="燃油私家车" value="car" :coefficient="0.18" :point="0"></el-option>
+                <el-option v-for="option in trafficOptions" :key="option.value" :label="option.label" :value="option.value"></el-option>
               </el-select>
             </el-form-item>
             <el-form-item label="出行里程(公里)">
               <el-input-number v-model="trafficForm.mileage" :min="0" :step="0.1" placeholder="请输入里程"></el-input-number>
             </el-form-item>
           </el-form>
+
+          <!-- 出行方式选择显示 -->
+          <div class="traffic-type-info" v-if="trafficForm.type">
+            <el-alert
+              :title="`当前选择: ${currentTrafficType}`"
+              type="info"
+              :closable="false"
+              show-icon
+            />
+          </div>
 
           <!-- 计算结果展示 -->
           <div class="result-box" v-if="trafficForm.mileage > 0">
@@ -144,29 +151,53 @@ const homeForm = reactive({
 // 垃圾分类
 const garbageChecked = ref([])
 
+// 出行方式配置
+const trafficOptions = [
+  { label: '步行/自行车', value: 'walk', coefficient: 0, point: 5 },
+  { label: '公交/地铁', value: 'bus', coefficient: 0.04, point: 3 },
+  { label: '电动车', value: 'electric', coefficient: 0.02, point: 2 },
+  { label: '燃油私家车', value: 'car', coefficient: 0.18, point: 0 }
+]
+
+// 出行表单
+const trafficForm = reactive({
+  type: 'walk',
+  mileage: 0
+})
+
 // 计算出行碳排放、减碳量、积分
 const carbonOutput = computed(() => {
   if (!trafficForm.mileage) return 0
-  const trafficType = TRAFFIC_TYPE_MAP[trafficForm.type]
-  const coefficient = trafficType ? trafficType.coefficient : 0
+  const option = trafficOptions.find(opt => opt.value === trafficForm.type)
+  const coefficient = option ? option.coefficient : 0
   return (trafficForm.mileage * coefficient).toFixed(3)
 })
 
 const carbonReduce = computed(() => {
-  if (!trafficForm.mileage) return 0
-  return (trafficForm.mileage * CARBON_CONFIG.carBase - carbonOutput.value).toFixed(3)
+  return (trafficForm.mileage * CARBON_CONFIG.carBase - parseFloat(carbonOutput.value)).toFixed(3)
 })
 
 const addPoint = computed(() => {
   if (!trafficForm.mileage) return 0
-  const trafficType = TRAFFIC_TYPE_MAP[trafficForm.type]
-  return trafficType ? trafficType.point : 0
+  const option = trafficOptions.find(opt => opt.value === trafficForm.type)
+  return option ? option.point : 0
+})
+
+// 获取当前选择的出行方式名称
+const currentTrafficType = computed(() => {
+  const option = trafficOptions.find(opt => opt.value === trafficForm.type)
+  return option ? option.label : ''
 })
 
 // 提交出行记录
 const submitTraffic = () => {
-  const trafficType = TRAFFIC_TYPE_MAP[trafficForm.type]
-  const subType = trafficType ? trafficType.name : '未知'
+  if (!userId.value) {
+    ElMessage.error('请先登录')
+    return
+  }
+  
+  const option = trafficOptions.find(opt => opt.value === trafficForm.type)
+  const subType = option ? option.label : ''
   const point = parseInt(addPoint.value)
   const carbonReduceNum = parseFloat(carbonReduce.value)
   const carbonOutputNum = parseFloat(carbonOutput.value)
@@ -176,6 +207,7 @@ const submitTraffic = () => {
     [userId.value, '出行', subType, trafficForm.mileage, carbonOutputNum, carbonReduceNum, point],
     function (err) {
       if (err) {
+        console.error('插入记录失败:', err)
         ElMessage.error('提交失败')
         return
       }
@@ -184,6 +216,7 @@ const submitTraffic = () => {
         [point, carbonReduceNum, userId.value],
         (err) => {
           if (err) {
+            console.error('更新用户数据失败:', err)
             ElMessage.error('更新用户数据失败')
             return
           }
@@ -206,6 +239,11 @@ const submitTraffic = () => {
 
 // 提交居家能耗记录
 const submitHome = () => {
+  if (!userId.value) {
+    ElMessage.error('请先登录')
+    return
+  }
+  
   let totalCarbonOutput = 0
   if (homeForm.electric) {
     totalCarbonOutput += homeForm.electric * CARBON_CONFIG.electricCoeff
@@ -220,6 +258,7 @@ const submitHome = () => {
     [userId.value, '居家能耗', '用电用水', homeForm.electric + '度/' + homeForm.water + '吨', totalCarbonOutput, 0, 0],
     function (err) {
       if (err) {
+        console.error('插入记录失败:', err)
         ElMessage.error('提交失败')
         return
       }
@@ -235,12 +274,18 @@ const submitHome = () => {
 
 // 提交垃圾分类记录
 const submitGarbage = () => {
+  if (!userId.value) {
+    ElMessage.error('请先登录')
+    return
+  }
+  
   const { point, carbonReduce } = CARBON_CONFIG.garbage
   // 插入记录
   db.run(`INSERT INTO carbon_record (user_id, record_type, sub_type, carbon_output, carbon_reduce, point) VALUES (?, ?, ?, ?, ?, ?)`,
     [userId.value, '垃圾分类', garbageChecked.value.join('、'), 0, carbonReduce, point],
     function (err) {
       if (err) {
+        console.error('插入记录失败:', err)
         ElMessage.error('提交失败')
         return
       }
@@ -249,6 +294,7 @@ const submitGarbage = () => {
         [point, carbonReduce, userId.value],
         (err) => {
           if (err) {
+            console.error('更新用户数据失败:', err)
             ElMessage.error('更新用户数据失败')
             return
           }
@@ -321,6 +367,9 @@ onMounted(() => {
 }
 .record-tabs {
   margin-bottom: 20px;
+}
+.traffic-type-info {
+  margin: 10px 0;
 }
 .result-box {
   margin: 20px 0;

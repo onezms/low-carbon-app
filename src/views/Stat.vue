@@ -2,19 +2,19 @@
   <div class="stat-container">
     <el-row :gutter="20">
       <el-col :span="24">
-        <el-card class="chart-card" title="月度减碳趋势">
+        <el-card class="chart-card" title="�¶ȼ�̼����">
           <div ref="lineChart" style="width:100%;height:400px;"></div>
         </el-card>
       </el-col>
     </el-row>
     <el-row :gutter="20" style="margin-top:20px;">
       <el-col :span="12">
-        <el-card class="chart-card" title="碳排放分类占比">
+        <el-card class="chart-card" title="̼�ŷŷ���ռ��">
           <div ref="pieChart" style="width:100%;height:350px;"></div>
         </el-card>
       </el-col>
       <el-col :span="12">
-        <el-card class="chart-card" title="每日减碳对比">
+        <el-card class="chart-card" title="ÿ�ռ�̼�Ա�">
           <div ref="barChart" style="width:100%;height:350px;"></div>
         </el-card>
       </el-col>
@@ -100,11 +100,11 @@ const initLineChart = (data) => {
   if(!lineChart.value) return
   const myChart = echarts.init(lineChart.value)
   myChart.setOption({
-    title: { text: '月度减碳量（kgCO₂）' },
+    title: { text: '月度减碳量(kgCO₂)' },
     tooltip: { trigger: 'axis' },
     xAxis: { type: 'category', data: data.months },
     yAxis: { type: 'value' },
-    series: [{ data: data.data, type: 'line', smooth: true, areaStyle: { opacity: 0.3 } }]
+    series: [{ data: data.data, type: 'line', smooth: true, areaStyle: { opacity: 0.3 }, itemStyle: { color: '#16a34a' } }]
   })
 }
 
@@ -114,7 +114,18 @@ const initPieChart = (data) => {
   myChart.setOption({
     title: { text: '碳排放来源', left: 'center' },
     tooltip: { trigger: 'item' },
-    series: [{ type: 'pie', radius: '50%', data: data }]
+    legend: { orient: 'vertical', left: 'left' },
+    series: [{ 
+      type: 'pie', 
+      radius: '50%', 
+      data: data,
+      itemStyle: {
+        color: (params) => {
+          const colors = ['#16a34a', '#22c55e', '#059669', '#10b981']
+          return colors[params.dataIndex % colors.length]
+        }
+      }
+    }]
   })
 }
 
@@ -167,8 +178,6 @@ onMounted(() => {
           }
         }
       })
-      
-
     }
     
     // 再次延迟确保DOM完全就绪
