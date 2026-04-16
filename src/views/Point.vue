@@ -1,22 +1,22 @@
-﻿﻿﻿<template>
+﻿﻿﻿﻿<template>
   <div class="point-container">
     <el-row :gutter="20">
       <el-col :span="8">
         <el-card class="top-card" style="background: linear-gradient(135deg, #16a34a, #22c55e); color: white;">
-          <div class="card-title">��ǰ�ܻ���</div>
+          <div class="card-title">当前总积分</div>
           <div class="card-num">{{ userInfo.total_point || 0 }}</div>
         </el-card>
       </el-col>
       <el-col :span="8">
         <el-card class="top-card" style="background: linear-gradient(135deg, #059669, #10b981); color: white;">
-          <div class="card-title">�ۼƼ�̼</div>
+          <div class="card-title">累计减碳</div>
           <div class="card-num">{{ (userInfo.total_carbon || 0).toFixed(2) }} kg</div>
         </el-card>
       </el-col>
       <el-col :span="8">
         <el-card class="top-card" style="background: linear-gradient(135deg, #047857, #059669); color: white;">
-          <div class="card-title">������</div>
-          <div class="card-num">{{ userInfo.check_days || 0 }} ��</div>
+          <div class="card-title">打卡天数</div>
+          <div class="card-num">{{ userInfo.check_days || 0 }} 天</div>
         </el-card>
       </el-col>
     </el-row>

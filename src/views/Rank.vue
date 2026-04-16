@@ -1,4 +1,4 @@
-﻿<template>
+﻿﻿﻿﻿<template>
   <div class="rank-container">
     <el-row :gutter="20" class="top-three-row">
       <el-col :span="8" v-for="(item,index) in topThree" :key="item.user_id">   
