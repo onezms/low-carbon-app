@@ -1,4 +1,4 @@
-﻿﻿﻿﻿<template>
+﻿﻿<template>
   <div class="rank-container">
     <el-row :gutter="20" class="top-three-row">
       <el-col :span="8" v-for="(item,index) in topThree" :key="item.user_id">   
@@ -11,7 +11,10 @@
       </el-col>
     </el-row>
 
-    <el-card class="list-card" title="完整排行">
+    <el-card class="list-card">
+      <template #header>
+        <div style="font-weight:bold">完整排行</div>
+      </template>
       <el-table :data="rankList" stripe>
         <el-table-column type="index" label="排名" width="80" align="center"> 
           <template #default="{$index}">

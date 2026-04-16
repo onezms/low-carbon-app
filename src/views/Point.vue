@@ -1,4 +1,4 @@
-﻿﻿﻿﻿<template>
+﻿﻿<template>
   <div class="point-container">
     <el-row :gutter="20">
       <el-col :span="8">

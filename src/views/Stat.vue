@@ -2,19 +2,19 @@
   <div class="stat-container">
     <el-row :gutter="20">
       <el-col :span="24">
-        <el-card class="chart-card" title="�¶ȼ�̼����">
+        <el-card class="chart-card" title="月度累计减碳量">
           <div ref="lineChart" style="width:100%;height:400px;"></div>
         </el-card>
       </el-col>
     </el-row>
     <el-row :gutter="20" style="margin-top:20px;">
       <el-col :span="12">
-        <el-card class="chart-card" title="̼�ŷŷ���ռ��">
+        <el-card class="chart-card" title="分类减碳占比">
           <div ref="pieChart" style="width:100%;height:350px;"></div>
         </el-card>
       </el-col>
       <el-col :span="12">
-        <el-card class="chart-card" title="ÿ�ռ�̼�Ա�">
+        <el-card class="chart-card" title="每日减碳对比">
           <div ref="barChart" style="width:100%;height:350px;"></div>
         </el-card>
       </el-col>
