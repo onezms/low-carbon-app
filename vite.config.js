@@ -5,7 +5,7 @@ import { resolve } from 'path'
 
 export default defineConfig({
   plugins: [vue()],
-  base: '/',
+  base: '/low-carbon-app/',
   build: {
     rollupOptions: {
       output: {
