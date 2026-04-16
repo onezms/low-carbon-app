@@ -4,14 +4,14 @@
       <el-col :span="8" v-for="(item,index) in topThree" :key="item.user_id">
         <el-card class="top-card" :class="'top-'+(index+1)">
           <div class="rank-num">{{ index===0?'🥇':index===1?'🥈':'🥉' }}</div>
-          <div class="avatar">{{ item.nickname?.charAt(0) || '�? }}</div>
+          <div class="avatar">{{ item.nickname?.charAt(0) || '?' }}</div>
           <div class="name">{{ item.nickname }}</div>
           <div class="score">{{ item.total_point }} 积分</div>
         </el-card>
       </el-col>
     </el-row>
 
-    <el-card class="list-card" title="完整排行�?>
+    <el-card class="list-card" title="完整排行">
       <el-table :data="rankList" stripe>
         <el-table-column type="index" label="排名" width="80" align="center">
           <template #default="scope">
@@ -22,7 +22,7 @@
         <el-table-column label="用户">
           <template #default="scope">
             <div style="display:flex;align-items:center">
-              <div class="table-avatar">{{ scope.row.nickname?.charAt(0) || '�? }}</div>
+              <div class="table-avatar">{{ scope.row.nickname?.charAt(0) || '?' }}</div>
               <span style="margin-left:10px">{{ scope.row.nickname }}</span>
             </div>
           </template>

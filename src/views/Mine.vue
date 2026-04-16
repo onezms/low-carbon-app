@@ -6,7 +6,7 @@
         <div class="info">
           <h2>{{ userInfo.nickname }}</h2>
           <p>账号：{{ userInfo.username }}</p>
-          <p>注册时间：{{ userInfo.create_time }}</p>
+          <p>注册时间：{{ formatTime(userInfo.create_time) }}</p>
         </div>
       </div>
       <div class="stats">
@@ -35,6 +35,42 @@
       </el-menu>
     </el-card>
 
+    <!-- 编辑资料对话框 -->
+    <el-dialog v-model="showProfile" title="编辑资料" width="500px">
+      <el-form :model="profileForm" label-width="100px">
+        <el-form-item label="昵称">
+          <el-input v-model="profileForm.nickname" placeholder="请输入昵称"></el-input>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="showProfile = false">取消</el-button>
+          <el-button type="primary" @click="saveProfile">保存</el-button>
+        </span>
+      </template>
+    </el-dialog>
+
+    <!-- 修改密码对话框 -->
+    <el-dialog v-model="showPassword" title="修改密码" width="500px">
+      <el-form :model="passwordForm" label-width="100px">
+        <el-form-item label="旧密码">
+          <el-input v-model="passwordForm.oldPassword" type="password" placeholder="请输入旧密码"></el-input>
+        </el-form-item>
+        <el-form-item label="新密码">
+          <el-input v-model="passwordForm.newPassword" type="password" placeholder="请输入新密码"></el-input>
+        </el-form-item>
+        <el-form-item label="确认密码">
+          <el-input v-model="passwordForm.confirmPassword" type="password" placeholder="请确认新密码"></el-input>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="showPassword = false">取消</el-button>
+          <el-button type="primary" @click="savePassword">保存</el-button>
+        </span>
+      </template>
+    </el-dialog>
+
     <!-- 设置对话框 -->
     <el-dialog v-model="showSettings" title="设置" width="600px">
       <el-form :model="settingsForm" label-width="120px">
@@ -59,12 +95,38 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import db, { getDataPath, setDataPath } from '../services/dbService.js'
 
+// 格式化时间为北京时间
+const formatTime = (isoString) => {
+  if (!isoString) return ''
+  const date = new Date(isoString)
+  // 直接使用toLocaleString并指定时区为北京时间
+  return date.toLocaleString('zh-CN', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  })
+}
+
 const router = useRouter()
 const userInfo = reactive({ nickname:'用户', username:'', total_point:0, total_carbon:0, check_days:0 })
 const isAdmin = ref(localStorage.getItem('username') === 'admin')
 const showSettings = ref(false)
+const showProfile = ref(false)
+const showPassword = ref(false)
 const settingsForm = reactive({
   dataPath: ''
+})
+const profileForm = reactive({
+  nickname: ''
+})
+const passwordForm = reactive({
+  oldPassword: '',
+  newPassword: '',
+  confirmPassword: ''
 })
 
 onMounted(() => {
@@ -84,6 +146,16 @@ const handleMenuSelect = (index) => {
     })
   } else if(index === 'settings') {
     showSettings.value = true
+  } else if(index === 'profile') {
+    // 填充当前昵称
+    profileForm.nickname = userInfo.nickname
+    showProfile.value = true
+  } else if(index === 'password') {
+    // 重置密码表单
+    passwordForm.oldPassword = ''
+    passwordForm.newPassword = ''
+    passwordForm.confirmPassword = ''
+    showPassword.value = true
   }
 }
 
@@ -98,6 +170,65 @@ const selectDataPath = () => {
   } else {
     ElMessage.info('请在桌面端应用中选择路径')
   }
+}
+
+const saveProfile = () => {
+  if (!profileForm.nickname) {
+    ElMessage.error('请输入昵称')
+    return
+  }
+  
+  // 更新用户信息
+  userInfo.nickname = profileForm.nickname
+  localStorage.setItem('userInfo', JSON.stringify(userInfo))
+  
+  // 更新数据库中的用户信息
+  db.run(`UPDATE user SET nickname = ? WHERE user_id = ?`, [profileForm.nickname, userInfo.user_id], (err) => {
+    if (err) {
+      ElMessage.error('保存失败')
+    } else {
+      ElMessage.success('保存成功')
+      showProfile.value = false
+    }
+  })
+}
+
+const savePassword = () => {
+  if (!passwordForm.oldPassword) {
+    ElMessage.error('请输入旧密码')
+    return
+  }
+  if (!passwordForm.newPassword) {
+    ElMessage.error('请输入新密码')
+    return
+  }
+  if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+    ElMessage.error('两次输入的密码不一致')
+    return
+  }
+  
+  // 检查旧密码是否正确
+  db.get(`SELECT password FROM user WHERE user_id = ?`, [userInfo.user_id], (err, row) => {
+    if (err || !row) {
+      ElMessage.error('获取用户信息失败')
+      return
+    }
+    
+    if (row.password !== passwordForm.oldPassword) {
+      ElMessage.error('旧密码错误')
+      return
+    }
+    
+    // 更新密码
+    db.run(`UPDATE user SET password = ? WHERE user_id = ?`, [passwordForm.newPassword, userInfo.user_id], (err) => {
+      if (err) {
+        ElMessage.error('保存失败')
+      } else {
+        ElMessage.success('保存成功')
+        showPassword.value = false
+      }
+    })
+  })
 }
 
 const saveSettings = () => {

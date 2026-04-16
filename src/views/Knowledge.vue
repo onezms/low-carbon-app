@@ -11,7 +11,7 @@
           <div class="article-content">
             <h3 class="title">{{ item.title }}</h3>
             <p class="desc">{{ item.content?.substring(0,80) }}...</p>
-            <div class="time">{{ item.create_time }}</div>
+            <div class="time">{{ formatTime(item.create_time) }}</div>
           </div>
         </el-card>
       </el-col>
@@ -19,7 +19,7 @@
 
     <el-dialog v-model="showDetail" title="文章详情" width="70%">
       <h2>{{ currentArticle.title }}</h2>
-      <p style="color:#666">{{ currentArticle.create_time }}</p>
+      <p style="color:#666">{{ formatTime(currentArticle.create_time) }}</p>
       <div style="line-height:1.8">{{ currentArticle.content }}</div>
     </el-dialog>
   </div>
@@ -28,6 +28,22 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import db from '../services/dbService.js'
+
+// 格式化时间为北京时间
+const formatTime = (isoString) => {
+  if (!isoString) return ''
+  const date = new Date(isoString)
+  // 直接使用toLocaleString并指定时区为北京时间
+  return date.toLocaleString('zh-CN', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  })
+}
 
 const isAdmin = ref(localStorage.getItem('username') === 'admin')
 const articleList = ref([])

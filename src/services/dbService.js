@@ -12,6 +12,7 @@ class BrowserDB {
       medal: []
     }
     this.loadFromLocalStorage()
+    this.generateMockData()
   }
 
   loadFromLocalStorage() {
@@ -65,16 +66,65 @@ class BrowserDB {
         if (tableMatch) {
           const table = tableMatch[1]
           if (this.tables[table]) {
+            // 处理用户积分更新
+            if (table === 'user') {
+              let pointsToAdd = 0
+              let carbonToAdd = 0
+              let userId = null
+              
+              // 处理包含两个字段的更新（如积分和减碳量）
+              if (sql.includes('total_point') && sql.includes('total_carbon')) {
+                pointsToAdd = parseFloat(params[0]) || 0
+                carbonToAdd = parseFloat(params[1]) || 0
+                userId = params[2]
+              }
+              // 处理只更新积分的情况（固定值）
+              else if (sql.includes('total_point') && sql.includes('+ 2')) {
+                pointsToAdd = 2
+                userId = params[0]
+              }
+              // 处理只更新积分的情况（参数值）
+              else if (sql.includes('total_point')) {
+                pointsToAdd = parseFloat(params[0]) || 0
+                userId = params[1]
+              }
+              // 处理只更新减碳量的情况
+              else if (sql.includes('total_carbon')) {
+                carbonToAdd = parseFloat(params[0]) || 0
+                userId = params[1]
+              }
+              
+              // 更新用户数据
+              for (let i = 0; i < this.tables[table].length; i++) {
+                const row = this.tables[table][i]
+                if (String(row.user_id) === String(userId)) {
+                  if (pointsToAdd > 0) {
+                    row.total_point = (parseFloat(row.total_point) || 0) + pointsToAdd
+                  }
+                  if (carbonToAdd > 0) {
+                    row.total_carbon = (parseFloat(row.total_carbon) || 0) + carbonToAdd
+                  }
+                  break
+                }
+              }
+            }
+            
             this.saveToLocalStorage()
-            callback(null)
+            if (typeof callback === 'function') {
+              callback(null)
+            }
             return
           }
         }
       }
 
-      callback(null)
+      if (typeof callback === 'function') {
+        callback(null)
+      }
     } catch (e) {
-      callback(e)
+      if (typeof callback === 'function') {
+        callback(e)
+      }
     }
   }
 
@@ -85,21 +135,56 @@ class BrowserDB {
         const table = tableMatch[1]
         if (this.tables[table]) {
           const rows = this.tables[table]
-          const row = rows.find(r => {
-            const whereMatch = sql.match(/WHERE (\w+) = \?/)
-            if (whereMatch) {
-              const field = whereMatch[1]
-              return r[field] === params[0]
-            }
-            return true
-          })
-          callback(null, row)
+          let row = null
+          
+          // 处理用户登录查询 (username = ?)
+          if (table === 'user' && sql.includes('username')) {
+            row = rows.find(r => r.username === params[0])
+          }
+          // 处理用户查询 (user_id = ?)
+          else if (table === 'user' && sql.includes('user_id')) {
+            const targetUserId = params[0]
+            row = rows.find(r => {
+              // 类型转换后比较，确保字符串和数字类型的ID都能匹配
+              return String(r.user_id) === String(targetUserId)
+            })
+          }
+          // 处理打卡检查查询
+          else if (table === 'carbon_record' && sql.includes('record_type = \'打卡\'')) {
+            const targetUserId = params[0]
+            row = rows.find(r => {
+              if (String(r.user_id) !== String(targetUserId)) return false
+              if (r.record_type !== '打卡') return false
+              const recordDate = new Date(r.create_time).toISOString().split('T')[0]
+              if (recordDate !== params[1]) return false
+              return true
+            })
+          }
+          // 处理其他查询
+          else {
+            row = rows.find(r => {
+              const whereMatch = sql.match(/WHERE (\w+) = \?/)
+              if (whereMatch) {
+                const field = whereMatch[1]
+                return r[field] === params[0]
+              }
+              return true
+            })
+          }
+          
+          if (typeof callback === 'function') {
+            callback(null, row)
+          }
           return
         }
       }
-      callback(null, null)
+      if (typeof callback === 'function') {
+        callback(null, null)
+      }
     } catch (e) {
-      callback(e, null)
+      if (typeof callback === 'function') {
+        callback(e, null)
+      }
     }
   }
 
@@ -111,19 +196,131 @@ class BrowserDB {
         if (this.tables[table]) {
           let rows = [...this.tables[table]]
           
-          const whereMatch = sql.match(/WHERE (\w+) = \?/)
+          const whereMatch = sql.match(/WHERE (.+?)(?: GROUP BY| ORDER BY| LIMIT|$)/)
           if (whereMatch) {
-            const field = whereMatch[1]
-            rows = rows.filter(r => r[field] === params[0])
+            const whereClause = whereMatch[1]
+            const conditions = whereClause.split('AND').map(c => c.trim())
+            
+            rows = rows.filter(r => {
+              let paramIndex = 0
+              for (const condition of conditions) {
+                // 处理普通字段 = ? 格式
+                if (condition.includes('= ?')) {
+                  const fieldMatch = condition.match(/(\w+) = \?/)
+                  if (fieldMatch) {
+                    const field = fieldMatch[1]
+                    if (String(r[field]) !== String(params[paramIndex])) {
+                      return false
+                    }
+                    paramIndex++
+                  }
+                }
+              }
+              return true
+            })
           }
           
-          callback(null, rows)
+          // 处理 GROUP BY 和 SUM
+          if (sql.includes('GROUP BY')) {
+            const groupByMatch = sql.match(/GROUP BY (.+?)(?: ORDER BY| LIMIT|$)/)
+            if (groupByMatch) {
+              const groupByField = groupByMatch[1].trim()
+              const sumMatch = sql.match(/SUM\(([^)]+)\)/)
+              
+              if (sumMatch) {
+                const sumField = sumMatch[1]
+                
+                // 分组计算
+                const grouped = {}
+                rows.forEach(row => {
+                  let groupKey
+                  
+                  // 处理 strftime 函数
+                  if (groupByField.includes('strftime')) {
+                    const strftimeMatch = groupByField.match(/strftime\('%Y-%m', (\w+)\)/)
+                    if (strftimeMatch) {
+                      const dateField = strftimeMatch[1]
+                      const date = new Date(row[dateField])
+                      groupKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+                    }
+                  }
+                  // 处理 date 函数
+                  else if (groupByField.includes('date(')) {
+                    const dateMatch = groupByField.match(/date\((\w+)\)/)
+                    if (dateMatch) {
+                      const dateField = dateMatch[1]
+                      groupKey = new Date(row[dateField]).toISOString().split('T')[0]
+                    }
+                  }
+                  // 普通字段
+                  else {
+                    groupKey = row[groupByField]
+                  }
+                  
+                  if (!grouped[groupKey]) {
+                    grouped[groupKey] = 0
+                  }
+                  grouped[groupKey] += parseFloat(row[sumField]) || 0
+                })
+                
+                // 转换为数组
+                const result = Object.entries(grouped).map(([date, total]) => ({
+                  date,
+                  total
+                }))
+                
+                // 处理 ORDER BY
+                const orderByMatch = sql.match(/ORDER BY (.+?)(?: LIMIT|$)/)
+                if (orderByMatch) {
+                  const orderByField = orderByMatch[1].trim()
+                  if (orderByField.includes('DESC')) {
+                    result.sort((a, b) => new Date(b.date) - new Date(a.date))
+                  } else {
+                    result.sort((a, b) => new Date(a.date) - new Date(b.date))
+                  }
+                }
+                
+                // 处理 LIMIT
+                const limitMatch = sql.match(/LIMIT (\d+)/)
+                if (limitMatch) {
+                  const limit = parseInt(limitMatch[1])
+                  callback(null, result.slice(0, limit))
+                } else {
+                  callback(null, result)
+                }
+                return
+              }
+            }
+          }
+          
+          // 处理 SUM 聚合函数（无 GROUP BY）
+          else if (sql.includes('SUM(')) {
+            const sumMatch = sql.match(/SUM\(([^)]+)\)/)
+            if (sumMatch) {
+              const sumField = sumMatch[1]
+              const total = rows.reduce((acc, row) => {
+                return acc + (parseFloat(row[sumField]) || 0)
+              }, 0)
+              if (typeof callback === 'function') {
+                callback(null, [{ total }])
+              }
+              return
+            }
+          }
+          
+          if (typeof callback === 'function') {
+            callback(null, rows)
+          }
           return
         }
       }
-      callback(null, [])
+      if (typeof callback === 'function') {
+        callback(null, [])
+      }
     } catch (e) {
-      callback(e, [])
+      if (typeof callback === 'function') {
+        callback(e, [])
+      }
     }
   }
 
@@ -146,6 +343,91 @@ class BrowserDB {
     const rows = this.tables[table]
     if (rows.length === 0) return 1
     return Math.max(...rows.map(r => r[`${table}_id`])) + 1
+  }
+
+  generateMockData() {
+    // 只有当记录数少于10条时才生成模拟数据
+    if (this.tables.carbon_record.length < 10) {
+      const mockData = []
+      const userId = 1 // 默认用户ID
+      const recordTypes = ['出行', '居家能耗', '垃圾分类']
+      const trafficTypes = ['步行/自行车', '公交/地铁', '电动车', '燃油私家车']
+      
+      // 生成过去3个月的数据
+      const now = new Date()
+      
+      for (let i = 0; i < 90; i++) {
+        const date = new Date(now)
+        date.setDate(date.getDate() - i)
+        
+        // 每天生成1-3条记录
+        const recordCount = Math.floor(Math.random() * 3) + 1
+        
+        for (let j = 0; j < recordCount; j++) {
+          const recordType = recordTypes[Math.floor(Math.random() * recordTypes.length)]
+          let subType, carbonOutput, carbonReduce, point, value
+          
+          if (recordType === '出行') {
+            subType = trafficTypes[Math.floor(Math.random() * trafficTypes.length)]
+            const mileage = Math.random() * 10 + 1 // 1-11公里
+            
+            switch (subType) {
+              case '步行/自行车':
+                carbonOutput = 0
+                carbonReduce = mileage * 0.18
+                point = 5
+                break
+              case '公交/地铁':
+                carbonOutput = mileage * 0.04
+                carbonReduce = mileage * 0.14
+                point = 3
+                break
+              case '电动车':
+                carbonOutput = mileage * 0.02
+                carbonReduce = mileage * 0.16
+                point = 2
+                break
+              case '燃油私家车':
+                carbonOutput = mileage * 0.18
+                carbonReduce = 0
+                point = 0
+                break
+            }
+            value = `${mileage.toFixed(1)}公里`
+          } else if (recordType === '居家能耗') {
+            subType = '用电用水'
+            const electric = Math.random() * 5 + 1 // 1-6度
+            const water = Math.random() * 2 + 1 // 1-3吨
+            carbonOutput = electric * 0.785 + water * 0.91
+            carbonReduce = 0
+            point = 0
+            value = `${electric.toFixed(1)}度/${water.toFixed(1)}吨`
+          } else if (recordType === '垃圾分类') {
+            subType = '可回收+厨余'
+            carbonOutput = 0
+            carbonReduce = 0.5
+            point = 4
+            value = '分类回收'
+          }
+          
+          mockData.push({
+            id: Date.now() + i * 100 + j,
+            user_id: userId,
+            record_type: recordType,
+            sub_type: subType,
+            value: value,
+            carbon_output: carbonOutput.toFixed(3),
+            carbon_reduce: carbonReduce.toFixed(3),
+            point: point,
+            create_time: date.toISOString()
+          })
+        }
+      }
+      
+      // 添加模拟数据到表中
+      this.tables.carbon_record = [...this.tables.carbon_record, ...mockData]
+      this.saveToLocalStorage()
+    }
   }
 }
 

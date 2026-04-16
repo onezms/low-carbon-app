@@ -137,8 +137,8 @@ const handleRegister = () => {
       return
     }
     // 插入用户到数据库
-    db.run(`INSERT INTO user (username, nickname, password) VALUES (?, ?, ?)`,
-      [registerForm.username, registerForm.nickname, registerForm.password],
+    db.run(`INSERT INTO user (username, nickname, password, total_point, total_carbon, check_days) VALUES (?, ?, ?, ?, ?, ?)`,
+      [registerForm.username, registerForm.nickname, registerForm.password, 0, 0, 0],
       function (err) {
         if (err) {
           ElMessage.error('注册失败')
