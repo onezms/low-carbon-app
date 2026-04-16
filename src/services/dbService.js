@@ -1,4 +1,5 @@
-﻿// 鏁版嵁搴撴湇鍔?- 娴忚鍣ㄦā鎷熸暟鎹増鏈?// 浣跨敤 localStorage 浣滀负瀛樺偍鍚庣锛屼负缃戦〉搴旂敤
+﻿// 数据库服务 - 浏览器模拟数据版本
+// 使用 localStorage 作为存储后端，为网页应用
 
 let dataPath = 'localStorage'
 
@@ -139,11 +140,11 @@ class BrowserDB {
               return String(r.user_id) === String(targetUserId)
             })
           }
-          else if (table === 'carbon_record' && sql.includes('record_type = \'鎵撳崱\'')) {
+          else if (table === 'carbon_record' && sql.includes('record_type = \'打卡\'')) {
             const targetUserId = params[0]
             row = rows.find(r => {
               if (String(r.user_id) !== String(targetUserId)) return false
-              if (r.record_type !== '鎵撳崱') return false
+              if (r.record_type !== '打卡') return false
               const recordDate = new Date(r.create_time).toISOString().split('T')[0]
               if (recordDate !== params[1]) return false
               return true
@@ -327,8 +328,8 @@ class BrowserDB {
     if (this.tables.carbon_record.length < 10) {
       const mockData = []
       const userId = 1
-      const recordTypes = ['鍑鸿', '灞呭鑳借€?, '鍨冨溇鍒嗙被']
-      const trafficTypes = ['姝ヨ/鑷杞?, '鍏氦/鍦伴搧', '鐢靛姩杞?, '鐕冩补绉佸杞?]
+      const recordTypes = ['出行', '居家能耗', '垃圾分类']
+      const trafficTypes = ['步行/自行车', '公交/地铁', '电动车', '燃油私家车']
 
       const now = new Date()
 
@@ -342,47 +343,47 @@ class BrowserDB {
           const recordType = recordTypes[Math.floor(Math.random() * recordTypes.length)]
           let subType, carbonOutput, carbonReduce, point, value
 
-          if (recordType === '鍑鸿') {
+          if (recordType === '出行') {
             subType = trafficTypes[Math.floor(Math.random() * trafficTypes.length)]
             const mileage = Math.random() * 10 + 1
 
             switch (subType) {
-              case '姝ヨ/鑷杞?:
+              case '步行/自行车':
                 carbonOutput = 0
                 carbonReduce = mileage * 0.18
                 point = 5
                 break
-              case '鍏氦/鍦伴搧':
+              case '公交/地铁':
                 carbonOutput = mileage * 0.04
                 carbonReduce = mileage * 0.14
                 point = 3
                 break
-              case '鐢靛姩杞?:
+              case '电动车':
                 carbonOutput = mileage * 0.02
                 carbonReduce = mileage * 0.16
                 point = 2
                 break
-              case '鐕冩补绉佸杞?:
+              case '燃油私家车':
                 carbonOutput = mileage * 0.18
                 carbonReduce = 0
                 point = 0
                 break
             }
-            value = `${mileage.toFixed(1)}鍏噷`
-          } else if (recordType === '灞呭鑳借€?) {
-            subType = '鐢ㄧ數鐢ㄦ按'
+            value = `${mileage.toFixed(1)}公里`
+          } else if (recordType === '居家能耗') {
+            subType = '用电用水'
             const electric = Math.random() * 5 + 1
             const water = Math.random() * 2 + 1
             carbonOutput = electric * 0.785 + water * 0.91
             carbonReduce = 0
             point = 0
-            value = `${electric.toFixed(1)}搴?${water.toFixed(1)}鍚╜
-          } else if (recordType === '鍨冨溇鍒嗙被') {
-            subType = '鍙洖鏀?鍘ㄤ綑'
+            value = `${electric.toFixed(1)}度/${water.toFixed(1)}吨`
+          } else if (recordType === '垃圾分类') {
+            subType = '可回收+厨余'
             carbonOutput = 0
             carbonReduce = 0.5
             point = 4
-            value = '鍒嗙被鍥炴敹'
+            value = '分类回收'
           }
 
           mockData.push({
