@@ -1,6 +1,5 @@
-<template>
+﻿<template>
   <div class="point-container">
-
     <el-row :gutter="20">
       <el-col :span="8">
         <el-card class="top-card" style="background: linear-gradient(135deg, #16a34a, #22c55e); color: white;">
@@ -21,7 +20,9 @@
         </el-card>
       </el-col>
     </el-row>
-
+    <div style="text-align:center;margin:20px 0;">
+      <el-button type="primary" size="large" @click="doCheckIn" style="width:200px;height:50px;font-size:18px;">📍 打卡签到</el-button>
+    </div>
     <el-card class="list-card" title="积分明细" style="margin-top:20px;">
       <el-table :data="pointList" stripe>
         <el-table-column prop="create_time" label="时间" width="180"></el-table-column>
@@ -35,7 +36,6 @@
         </el-table-column>
       </el-table>
     </el-card>
-
     <el-card class="medal-card" title="我的勋章" style="margin-top:20px;">
       <el-row :gutter="20">
         <el-col :span="6" v-for="medal in medals" :key="medal.id">
@@ -48,22 +48,37 @@
     </el-card>
   </div>
 </template>
-
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
 import db from '../services/dbService.js'
-
 const userId = ref(localStorage.getItem('userId') || 1)
 const userInfo = reactive({ total_point:0, total_carbon:0, check_days:0 })
 const pointList = ref([])
-
-const medals = ref([
-  {id:1,name:'低碳新手',icon:'🌱'},
-  {id:2,name:'绿色达人',icon:'🌿'},
-  {id:3,name:'环保先锋',icon:'🌳'},
-  {id:4,name:'地球卫士',icon:'🌍'}
-])
-
+const medals = ref([{id:1,name:'低碳新手',icon:'🌱'},{id:2,name:'绿色达人',icon:'🌿'},{id:3,name:'环保先锋',icon:'🌳'},{id:4,name:'地球卫士',icon:'🌍'}])
+const calculateCheckDays = (callback) => {
+  const today = new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')
+  db.all(`SELECT date(create_time) as date FROM carbon_record WHERE user_id = ? GROUP BY date(create_time) ORDER BY date DESC`, [userId.value], (err, rows) => {
+    if (rows && rows.length > 0) {
+      let consecutiveDays = 0
+      let currentDate = new Date(today)
+      for (let i = 0; i < rows.length; i++) {
+        const recordDate = new Date(rows[i].date)
+        const expectedDate = new Date(currentDate)
+        expectedDate.setDate(expectedDate.getDate() - i)
+        if (recordDate.toDateString() === expectedDate.toDateString()) { consecutiveDays++ }
+        else if (i === 0 && recordDate.toDateString() === currentDate.toDateString()) { consecutiveDays = 1 }
+        else { break }
+      }
+      db.run(`UPDATE user SET check_days = ? WHERE user_id = ?`, [consecutiveDays, userId.value], (err) => {
+        if (!err && callback) callback(consecutiveDays)
+      })
+    } else {
+      db.run(`UPDATE user SET check_days = 0 WHERE user_id = ?`, [0, userId.value])
+      if (callback) callback(0)
+    }
+  })
+}
 const getUserInfo = () => {
   try {
     db.get(`SELECT * FROM user WHERE user_id = ?`, [userId.value], (err, row) => {
@@ -71,21 +86,29 @@ const getUserInfo = () => {
     })
   } catch (e) {}
 }
-
 const getPointList = () => {
   try {
-    db.all(`SELECT * FROM carbon_record WHERE user_id=?`, [userId.value], (err, rows) => {
+    db.all(`SELECT * FROM carbon_record WHERE user_id = ? AND point > 0 ORDER BY create_time DESC`, [userId.value], (err, rows) => {
       if(rows) pointList.value = rows
     })
   } catch (e) {}
 }
-
-onMounted(() => {
-  getUserInfo()
-  getPointList()
-})
+const doCheckIn = () => {
+  const today = new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')
+  db.get(`SELECT * FROM carbon_record WHERE user_id = ? AND record_type = '打卡' AND date(create_time) = ?`, [userId.value, today], (err, row) => {
+    if (row) { ElMessage.info('今天已经打卡过了'); return }
+    db.run(`INSERT INTO carbon_record (user_id, record_type, sub_type, point, carbon_output, carbon_reduce) VALUES (?, ?, ?, ?, ?, ?)`, [userId.value, '打卡', '每日打卡', 2, 0, 0], (err) => {
+      if (err) { ElMessage.error('打卡失败'); return }
+      db.run(`UPDATE user SET total_point = total_point + 2 WHERE user_id = ?`, [userId.value], (err) => {
+        if (err) { ElMessage.error('更新积分失败'); return }
+        ElMessage.success('打卡成功！获得 2 积分')
+        calculateCheckDays(() => { getUserInfo(); getPointList() })
+      })
+    })
+  })
+}
+onMounted(() => { getUserInfo(); getPointList(); calculateCheckDays() })
 </script>
-
 <style scoped>
 .point-container { padding: 20px; }
 .top-card { text-align:center; border:none; }

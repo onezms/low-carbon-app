@@ -4,14 +4,14 @@
       <el-col :span="8" v-for="(item,index) in topThree" :key="item.user_id">
         <el-card class="top-card" :class="'top-'+(index+1)">
           <div class="rank-num">{{ index===0?'🥇':index===1?'🥈':'🥉' }}</div>
-          <div class="avatar">{{ item.nickname?.charAt(0) || '用' }}</div>
+          <div class="avatar">{{ item.nickname?.charAt(0) || '�? }}</div>
           <div class="name">{{ item.nickname }}</div>
           <div class="score">{{ item.total_point }} 积分</div>
         </el-card>
       </el-col>
     </el-row>
 
-    <el-card class="list-card" title="完整排行榜">
+    <el-card class="list-card" title="完整排行�?>
       <el-table :data="rankList" stripe>
         <el-table-column type="index" label="排名" width="80" align="center">
           <template #default="scope">
@@ -22,7 +22,7 @@
         <el-table-column label="用户">
           <template #default="scope">
             <div style="display:flex;align-items:center">
-              <div class="table-avatar">{{ scope.row.nickname?.charAt(0) || '用' }}</div>
+              <div class="table-avatar">{{ scope.row.nickname?.charAt(0) || '�? }}</div>
               <span style="margin-left:10px">{{ scope.row.nickname }}</span>
             </div>
           </template>
@@ -42,15 +42,13 @@ import db from '../../db/index.js'
 const topThree = ref([])
 const rankList = ref([])
 
-const mockRankData = [
-  {user_id:1,nickname:'绿色达人小明',total_point:1280,total_carbon:89.5,check_days:30},
-  {user_id:2,nickname:'环保先锋小红',total_point:1150,total_carbon:78.2,check_days:28},
-  {user_id:3,nickname:'低碳生活家',total_point:980,total_carbon:65.8,check_days:25}
-]
-
 const getRankList = () => {
-  rankList.value = mockRankData
-  topThree.value = mockRankData.slice(0,3)
+  db.all("SELECT user_id, nickname, total_point, total_carbon, check_days FROM user ORDER BY total_point DESC, total_carbon DESC", [], (err, rows) => {
+    if (!err && rows) {
+      rankList.value = rows
+      topThree.value = rows.slice(0, 3)
+    }
+  })
 }
 
 onMounted(() => {
