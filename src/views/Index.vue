@@ -159,12 +159,6 @@ const trafficOptions = [
   { label: '燃油私家车', value: 'car', coefficient: 0.18, point: 0 }
 ]
 
-// 出行表单
-const trafficForm = reactive({
-  type: 'walk',
-  mileage: 0
-})
-
 // 计算出行碳排放、减碳量、积分
 const carbonOutput = computed(() => {
   if (!trafficForm.mileage) return 0
