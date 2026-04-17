@@ -384,4 +384,21 @@ onMounted(() => {
 :deep(.el-table th.el-table__cell > .cell) {
   text-align: center !important;
 }
+
+/* 让表格靠左显示，移除左侧空白 */
+:deep(.el-table) {
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+}
+
+:deep(.el-table__inner-wrapper) {
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+}
+
+:deep(.el-table__header-wrapper),
+:deep(.el-table__body-wrapper) {
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+}
 </style>
