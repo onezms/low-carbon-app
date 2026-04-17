@@ -57,7 +57,7 @@ const getMonthlyData = (callback) => {
 
 // 获取分类数据
 const getCategoryData = (callback) => {
-  db.all(`SELECT sub_type, SUM(carbon_reduce) as total FROM carbon_record WHERE user_id = ? AND carbon_reduce > 0 GROUP BY sub_type`, [userId.value], (err, rows) => {
+  db.all(`SELECT sub_type, SUM(carbon_reduce) as total FROM carbon_record WHERE user_id = ? GROUP BY sub_type`, [userId.value], (err, rows) => {
     if (err || !rows) {
       callback([{value: 1, name: '无数据'}])
       return
@@ -65,7 +65,7 @@ const getCategoryData = (callback) => {
     
     // 处理数据
     const pieData = rows
-      .filter(row => row.sub_type)
+      .filter(row => row.sub_type && parseFloat(row.total) > 0)
       .map(row => ({
         value: parseFloat((parseFloat(row.total) || 0).toFixed(2)),
         name: row.sub_type
@@ -119,32 +119,28 @@ const initPieChart = (data) => {
   if(!pieChart.value) return
   const myChart = echarts.init(pieChart.value)
   myChart.setOption({
-    title: { text: '碳排放来源', left: 'center' },
+    title: { text: '减碳来源', left: 'center' },
     tooltip: { trigger: 'item' },
     legend: { orient: 'vertical', left: 'left' },
     series: [{ 
       type: 'pie', 
-      radius: '50%', 
+      radius: ['40%', '70%'],
       data: data,
       itemStyle: {
         color: (params) => {
-          const colors = ['#16a34a', '#22c55e', '#059669', '#10b981']
+          const colors = ['#16a34a', '#22c55e', '#059669', '#10b981', '#14b8a6', '#0d9488']
           return colors[params.dataIndex % colors.length]
         }
       },
       label: {
         show: true,
-        formatter: '{b}: {c|{c}} kg ({d}%)',
-        rich: {
-          c: {
-            formatter: function(params) {
-              return parseFloat(params.value).toFixed(2);
-            }
-          }
-        }
+        formatter: '{b}: {c} kg ({d}%)',
+        fontSize: 12
       },
       labelLine: {
-        show: true
+        show: true,
+        length: 30,
+        length2: 50
       }
     }]
   })
