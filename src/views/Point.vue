@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="point-container">
     <el-row :gutter="20">
       <el-col :span="8">
@@ -243,8 +243,19 @@ const getPointList = () => {
 }
 const doCheckIn = () => {
   const today = new Date().toISOString().split('T')[0]
-  db.get(`SELECT * FROM carbon_record WHERE user_id = ? AND record_type = '打卡' AND date(create_time) = ?`, [userId.value, today], (err, row) => {
-    if (row) { ElMessage.info('今天已经打卡过了'); return }
+  db.all(`SELECT * FROM carbon_record WHERE user_id = ? AND record_type = '打卡'`, [userId.value], (err, rows) => {
+    if (err) { ElMessage.error('查询失败'); return }
+    
+    const todayRecord = rows ? rows.find(r => {
+      const recordDate = new Date(r.create_time).toISOString().split('T')[0]
+      return recordDate === today
+    }) : null
+    
+    if (todayRecord) {
+      ElMessage.info('今天已经打卡过了')
+      return
+    }
+    
     db.run(`INSERT INTO carbon_record (user_id, record_type, sub_type, point, carbon_output, carbon_reduce) VALUES (?, ?, ?, ?, ?, ?)`, [userId.value, '打卡', '每日打卡', 2, 0, 0], (err) => {
       if (err) { ElMessage.error('打卡失败'); return }
       db.run(`UPDATE user SET total_point = total_point + 2 WHERE user_id = ?`, [userId.value], (err) => {
