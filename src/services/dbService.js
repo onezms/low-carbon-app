@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿// 数据库服务 - 浏览器模拟数据版本
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿// 数据库服务 - 浏览器模拟数据版本
 // 使用 localStorage 作为存储后端，为网页应用
 
 let dataPath = 'localStorage'
@@ -276,7 +276,7 @@ class BrowserDB {
             }
           }
 
-          else if (sql.includes('SUM(')) {
+          if (sql.includes('SUM(')) {
             const sumMatch = sql.match(/SUM\(([^)]+)\)/)
             if (sumMatch) {
               const sumField = sumMatch[1]
@@ -328,7 +328,7 @@ class BrowserDB {
   }
 
   generateMockData() {
-    if (this.tables.carbon_record.length < 10) {
+    if (this.tables.carbon_record.length < 1) {
       const mockData = []
       const userId = 1
       const recordTypes = ['出行', '居家能耗', '垃圾分类']
@@ -336,11 +336,11 @@ class BrowserDB {
 
       const now = new Date()
 
-      for (let i = 0; i < 90; i++) {
+      for (let i = 0; i < 3; i++) {
         const date = new Date(now)
         date.setDate(date.getDate() - i)
 
-        const recordCount = Math.floor(Math.random() * 3) + 1
+        const recordCount = Math.floor(Math.random() * 2) + 1
 
         for (let j = 0; j < recordCount; j++) {
           const recordType = recordTypes[Math.floor(Math.random() * recordTypes.length)]
@@ -348,7 +348,7 @@ class BrowserDB {
 
           if (recordType === '出行') {
             subType = trafficTypes[Math.floor(Math.random() * trafficTypes.length)]
-            const mileage = Math.random() * 10 + 1
+            const mileage = Math.random() * 5 + 1
 
             switch (subType) {
               case '步行/自行车':
@@ -375,8 +375,8 @@ class BrowserDB {
             value = `${mileage.toFixed(1)}公里`
           } else if (recordType === '居家能耗') {
             subType = '用电用水'
-            const electric = Math.random() * 5 + 1
-            const water = Math.random() * 2 + 1
+            const electric = Math.random() * 3 + 1
+            const water = Math.random() * 1 + 0.5
             carbonOutput = electric * 0.785 + water * 0.91
             carbonReduce = 0
             point = 0
@@ -403,7 +403,7 @@ class BrowserDB {
         }
       }
 
-      this.tables.carbon_record = [...this.tables.carbon_record, ...mockData]
+      this.tables.carbon_record = mockData
       this.saveToLocalStorage()
     }
   }

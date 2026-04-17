@@ -199,7 +199,7 @@ const handleRouteChange = () => {
 
 const calculateCheckDays = (callback) => {
   const today = new Date().toISOString().split('T')[0]
-  db.all(`SELECT date(create_time) as date FROM carbon_record WHERE user_id = ? GROUP BY date(create_time) ORDER BY date DESC`, [userId.value], (err, rows) => {
+  db.all(`SELECT date(create_time) as date FROM carbon_record WHERE user_id = ? AND record_type = '打卡' GROUP BY date(create_time) ORDER BY date DESC`, [userId.value], (err, rows) => {
     if (rows && rows.length > 0) {
       let consecutiveDays = 0
       let currentDate = new Date(today)

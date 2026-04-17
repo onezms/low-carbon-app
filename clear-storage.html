@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>清理本地存储</title>
+</head>
+<body>
+    <h1>清理本地存储</h1>
+    <p>点击按钮清理本地存储中的数据，然后刷新网站。</p>
+    <button onclick="clearStorage()">清理数据</button>
+    <div id="result"></div>
+
+    <script>
+        function clearStorage() {
+            localStorage.removeItem('low-carbon-user');
+            localStorage.removeItem('low-carbon-carbon_record');
+            localStorage.removeItem('low-carbon-article');
+            localStorage.removeItem('low-carbon-medal');
+            localStorage.removeItem('userId');
+            
+            document.getElementById('result').innerHTML = '<p style="color: green;">数据清理成功！</p>';
+            
+            // 3秒后自动关闭页面
+            setTimeout(() => {
+                window.close();
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
