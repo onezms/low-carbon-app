@@ -225,11 +225,11 @@ const calculateCheckDays = (callback) => {
 }
 const getUserInfo = () => {
   try {
-    // 从carbon_record表重新计算累计积分和减碳量
-    db.all(`SELECT SUM(point) as total_point, SUM(carbon_reduce) as total_carbon FROM carbon_record WHERE user_id = ?`, [userId.value], (err, rows) => {
-      if (!err && rows && rows[0]) {
-        const totalPoint = parseFloat(rows[0].total_point) || 0
-        const totalCarbon = parseFloat(rows[0].total_carbon) || 0
+    // 先获取所有记录，然后在JavaScript中计算总和
+    db.all(`SELECT point, carbon_reduce FROM carbon_record WHERE user_id = ?`, [userId.value], (err, rows) => {
+      if (!err && rows) {
+        const totalPoint = rows.reduce((acc, row) => acc + (parseFloat(row.point) || 0), 0)
+        const totalCarbon = rows.reduce((acc, row) => acc + (parseFloat(row.carbon_reduce) || 0), 0)
         
         // 更新用户信息
         userInfo.total_point = totalPoint
