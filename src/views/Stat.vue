@@ -48,7 +48,7 @@ const getMonthlyData = (callback) => {
       const date = new Date(row.date)
       const monthName = (date.getMonth() + 1) + '月'
       months.push(monthName)
-      data.push(parseFloat(row.total) || 0)
+      data.push(parseFloat((parseFloat(row.total) || 0).toFixed(2)))
     })
     
     callback({ months, data })
@@ -64,10 +64,17 @@ const getCategoryData = (callback) => {
     }
     
     // 处理数据
-    const pieData = rows.map(row => ({
-      value: parseFloat((parseFloat(row.total) || 0).toFixed(2)),
-      name: row.record_type || '未分类'
-    }))
+    const pieData = rows
+      .filter(row => row.record_type)
+      .map(row => ({
+        value: parseFloat((parseFloat(row.total) || 0).toFixed(2)),
+        name: row.record_type
+      }))
+    
+    if (pieData.length === 0) {
+      callback([{value: 1, name: '无数据'}])
+      return
+    }
     
     callback(pieData)
   })
@@ -89,7 +96,7 @@ const getDailyData = (callback) => {
       const dayNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
       const dayName = dayNames[date.getDay()]
       days.push(dayName)
-      data.push(parseFloat(row.total) || 0)
+      data.push(parseFloat((parseFloat(row.total) || 0).toFixed(2)))
     })
     
     callback({ days, data })

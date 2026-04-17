@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿// 数据库服务 - 浏览器模拟数据版本
+﻿﻿﻿﻿﻿﻿﻿﻿﻿// 数据库服务 - 浏览器模拟数据版本
 // 使用 localStorage 作为存储后端，为网页应用
 
 let dataPath = 'localStorage'
@@ -246,10 +246,13 @@ class BrowserDB {
                   grouped[groupKey] += parseFloat(row[sumField]) || 0
                 })
 
-                const result = Object.entries(grouped).map(([date, total]) => ({
-                  date,
-                  total
-                }))
+                const result = Object.entries(grouped).map(([key, total]) => {
+                  if (groupByField.includes('strftime') || groupByField.includes('date(')) {
+                    return { date: key, total }
+                  } else {
+                    return { [groupByField]: key, total }
+                  }
+                })
 
                 const orderByMatch = sql.match(/ORDER BY (.+?)(?: LIMIT|$)/)
                 if (orderByMatch) {
