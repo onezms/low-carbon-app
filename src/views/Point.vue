@@ -225,12 +225,19 @@ const calculateCheckDays = (callback) => {
 }
 const getUserInfo = () => {
   try {
-    db.get(`SELECT * FROM user WHERE user_id = ?`, [userId.value], (err, row) => {
-      if(row) {
-        Object.assign(userInfo, row)
-        userInfo.total_point = parseFloat(row.total_point) || 0
-        userInfo.total_carbon = parseFloat(row.total_carbon) || 0
-        userInfo.check_days = parseInt(row.check_days) || 0
+    // 从carbon_record表重新计算累计积分和减碳量
+    db.all(`SELECT SUM(point) as total_point, SUM(carbon_reduce) as total_carbon FROM carbon_record WHERE user_id = ?`, [userId.value], (err, rows) => {
+      if (!err && rows && rows[0]) {
+        const totalPoint = parseFloat(rows[0].total_point) || 0
+        const totalCarbon = parseFloat(rows[0].total_carbon) || 0
+        
+        // 更新用户信息
+        userInfo.total_point = totalPoint
+        userInfo.total_carbon = totalCarbon
+        
+        // 同时更新user表
+        db.run(`UPDATE user SET total_point = ?, total_carbon = ? WHERE user_id = ?`, [totalPoint, totalCarbon, userId.value])
+        
         calculateMedals()
         calculateLevelProgress()
       }
