@@ -199,25 +199,28 @@ const handleRouteChange = () => {
 
 const calculateCheckDays = (callback) => {
   const today = new Date().toISOString().split('T')[0]
-  db.all(`SELECT date(create_time) as date FROM carbon_record WHERE user_id = ? AND record_type = '打卡' GROUP BY date(create_time) ORDER BY date DESC`, [userId.value], (err, rows) => {
-    if (rows && rows.length > 0) {
-      let consecutiveDays = 0
-      let currentDate = new Date(today)
-      for (let i = 0; i < rows.length; i++) {
-        const recordDate = new Date(rows[i].date)
-        const expectedDate = new Date(currentDate)
-        expectedDate.setDate(expectedDate.getDate() - i)
-        if (recordDate.toDateString() === expectedDate.toDateString()) { consecutiveDays++ }
-        else if (i === 0 && recordDate.toDateString() === currentDate.toDateString()) { consecutiveDays = 1 }
-        else { break }
-      }
-      db.run(`UPDATE user SET check_days = ? WHERE user_id = ?`, [consecutiveDays, userId.value], (err) => {
-        if (!err && callback) callback(consecutiveDays)
-      })
-    } else {
+  db.all(`SELECT * FROM carbon_record WHERE user_id = ? AND record_type = '打卡'`, [userId.value], (err, rows) => {
+    if (err || !rows || rows.length === 0) {
       db.run(`UPDATE user SET check_days = 0 WHERE user_id = ?`, [userId.value])
+      userInfo.check_days = 0
       if (callback) callback(0)
+      return
     }
+    
+    const uniqueDates = new Set()
+    rows.forEach(row => {
+      const recordDate = new Date(row.create_time).toISOString().split('T')[0]
+      uniqueDates.add(recordDate)
+    })
+    
+    const checkDays = uniqueDates.size
+    
+    db.run(`UPDATE user SET check_days = ? WHERE user_id = ?`, [checkDays, userId.value], (err) => {
+      if (!err) {
+        userInfo.check_days = checkDays
+      }
+      if (callback) callback(checkDays)
+    })
   })
 }
 const getUserInfo = () => {
