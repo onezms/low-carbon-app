@@ -410,4 +410,14 @@ onMounted(() => {
   margin-left: 0 !important;
   padding-left: 0 !important;
 }
+
+/* 修改表格表头包装器为flex布局 */
+:deep(.el-table__header-wrapper) {
+  display: flex !important;
+}
+
+/* 修改表格滚动条包装器为flex布局 */
+:deep(.el-scrollbar__wrap) {
+  display: flex !important;
+}
 </style>
