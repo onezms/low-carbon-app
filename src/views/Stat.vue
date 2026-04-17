@@ -65,7 +65,7 @@ const getCategoryData = (callback) => {
     
     // 处理数据
     const pieData = rows.map(row => ({
-      value: parseFloat(row.total) || 0,
+      value: parseFloat((parseFloat(row.total) || 0).toFixed(2)),
       name: row.record_type
     }))
     
@@ -124,6 +124,20 @@ const initPieChart = (data) => {
           const colors = ['#16a34a', '#22c55e', '#059669', '#10b981']
           return colors[params.dataIndex % colors.length]
         }
+      },
+      label: {
+        show: true,
+        formatter: '{b}: {c|{c}} kg ({d}%)',
+        rich: {
+          c: {
+            formatter: function(params) {
+              return parseFloat(params.value).toFixed(2);
+            }
+          }
+        }
+      },
+      labelLine: {
+        show: true
       }
     }]
   })

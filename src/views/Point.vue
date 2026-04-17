@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿<template>
+﻿<template>
   <div class="point-container">
     <el-row :gutter="20">
       <el-col :span="8">
@@ -74,7 +74,28 @@ const formatTime = (isoString) => {
 const userId = ref(localStorage.getItem('userId') || 1)
 const userInfo = reactive({ total_point:0, total_carbon:0, check_days:0 })
 const pointList = ref([])
-const medals = ref([{id:1,name:'低碳新手',icon:'🌱'},{id:2,name:'绿色达人',icon:'🌿'},{id:3,name:'环保先锋',icon:'🌳'},{id:4,name:'地球卫士',icon:'🌍'}])
+const medals = ref([])
+
+// 计算用户勋章
+const calculateMedals = () => {
+  const point = userInfo.total_point || 0
+  const userMedals = []
+  
+  // 勋章等级
+  if (point >= 1000) {
+    userMedals.push({id:4,name:'地球卫士',icon:'🌍'})
+  } else if (point >= 500) {
+    userMedals.push({id:3,name:'环保先锋',icon:'🌳'})
+  } else if (point >= 200) {
+    userMedals.push({id:2,name:'绿色达人',icon:'🌿'})
+  } else if (point >= 10) {
+    userMedals.push({id:1,name:'低碳新手',icon:'🌱'})
+  } else {
+    userMedals.push({id:0,name:'环保小白',icon:'🌼'})
+  }
+  
+  medals.value = userMedals
+}
 
 const router = useRouter()
 const route = useRoute()
@@ -121,6 +142,7 @@ const getUserInfo = () => {
         userInfo.total_point = parseFloat(row.total_point) || 0
         userInfo.total_carbon = parseFloat(row.total_carbon) || 0
         userInfo.check_days = parseInt(row.check_days) || 0
+        calculateMedals()
       }
     })
   } catch (e) {}
