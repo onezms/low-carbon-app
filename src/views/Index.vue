@@ -379,4 +379,9 @@ onMounted(() => {
 .record-list-card {
   margin-top: 20px;
 }
+
+/* 强制表头文字居中 */
+:deep(.el-table th.el-table__cell > .cell) {
+  text-align: center !important;
+}
 </style>
