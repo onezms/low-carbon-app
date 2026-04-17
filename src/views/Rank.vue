@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿<template>
+﻿﻿﻿﻿﻿<template>
   <div class="rank-container">
     <el-row :gutter="20" class="top-three-row">
       <el-col :span="8" v-for="(item,index) in topThree" :key="item.user_id">
@@ -31,7 +31,11 @@
           </template>
         </el-table-column>
         <el-table-column prop="total_point" label="积分"></el-table-column>
-        <el-table-column prop="total_carbon" label="减碳 (kg)"></el-table-column>
+        <el-table-column label="减碳 (kg)">
+          <template #default="scope">
+            {{ parseFloat(scope.row.total_carbon || 0).toFixed(2) }}
+          </template>
+        </el-table-column>
         <el-table-column prop="check_days" label="打卡天数"></el-table-column>
       </el-table>
     </el-card>
