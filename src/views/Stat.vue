@@ -124,7 +124,7 @@ const initPieChart = (data) => {
     legend: { orient: 'vertical', left: 'left' },
     series: [{ 
       type: 'pie', 
-      radius: ['40%', '70%'],
+      radius: ['40%', '60%'],
       data: data,
       itemStyle: {
         color: (params) => {
@@ -135,12 +135,16 @@ const initPieChart = (data) => {
       label: {
         show: true,
         formatter: '{b}: {c} kg ({d}%)',
-        fontSize: 12
+        fontSize: 12,
+        position: 'outside'
       },
       labelLine: {
         show: true,
-        length: 30,
-        length2: 50
+        length: 15,
+        length2: 30,
+        lineStyle: {
+          width: 1
+        }
       }
     }]
   })
