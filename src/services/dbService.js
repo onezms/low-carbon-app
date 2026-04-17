@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿// 数据库服务 - 浏览器模拟数据版本
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿// 数据库服务 - 浏览器模拟数据版本
 // 使用 localStorage 作为存储后端，为网页应用
 
 let dataPath = 'localStorage'
@@ -194,13 +194,39 @@ class BrowserDB {
               let paramIndex = 0
               for (const condition of conditions) {
                 if (condition.includes('= ?')) {
-                  const fieldMatch = condition.match(/(\w+) = \?/)
-                  if (fieldMatch) {
-                    const field = fieldMatch[1]
-                    if (String(r[field]) !== String(params[paramIndex])) {
+                  // 处理date(create_time) = ? 这样的条件
+                  if (condition.includes('date(')) {
+                    const dateMatch = condition.match(/date\((\w+)\) = \?/)
+                    if (dateMatch) {
+                      const field = dateMatch[1]
+                      const recordDate = new Date(r[field]).toISOString().split('T')[0]
+                      if (recordDate !== String(params[paramIndex])) {
+                        return false
+                      }
+                      paramIndex++
+                    }
+                  }
+                  // 处理普通字段 = ? 这样的条件
+                  else {
+                    const fieldMatch = condition.match(/(\w+) = \?/)
+                    if (fieldMatch) {
+                      const field = fieldMatch[1]
+                      if (String(r[field]) !== String(params[paramIndex])) {
+                        return false
+                      }
+                      paramIndex++
+                    }
+                  }
+                }
+                // 处理 record_type = '打卡' 这样的硬编码值条件
+                else if (condition.includes(" = '")) {
+                  const hardCodeMatch = condition.match(/(\w+) = '(.*)'/)
+                  if (hardCodeMatch) {
+                    const field = hardCodeMatch[1]
+                    const value = hardCodeMatch[2]
+                    if (r[field] !== value) {
                       return false
                     }
-                    paramIndex++
                   }
                 }
               }
