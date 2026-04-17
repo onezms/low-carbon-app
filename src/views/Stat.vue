@@ -66,7 +66,7 @@ const getCategoryData = (callback) => {
     // 处理数据
     const pieData = rows.map(row => ({
       value: parseFloat((parseFloat(row.total) || 0).toFixed(2)),
-      name: row.record_type
+      name: row.record_type || '未分类'
     }))
     
     callback(pieData)
