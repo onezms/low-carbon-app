@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿<template>
+﻿﻿﻿﻿﻿<template>
   <div class="rank-container">
     <el-row :gutter="20" class="top-three-row">
       <el-col :span="8" v-for="(item,index) in topThree" :key="item.user_id">
@@ -50,32 +50,51 @@ const topThree = ref([])
 const rankList = ref([])
 
 const getRankList = () => {
-  db.all("SELECT user_id, nickname, total_point, total_carbon FROM user ORDER BY total_point DESC, total_carbon DESC", [], (err, users) => {
+  db.all("SELECT user_id, nickname FROM user", [], (err, users) => {
     if (!err && users) {
       const processUsers = async (userList) => {
         const processedUsers = []
         for (const user of userList) {
-          // 计算每个用户的打卡天数
-          const checkDays = await new Promise((resolve) => {
-            db.all(`SELECT * FROM carbon_record WHERE user_id = ? AND record_type = '打卡'`, [user.user_id], (err, rows) => {
-              if (err || !rows || rows.length === 0) {
-                resolve(0)
-              } else {
-                const uniqueDates = new Set()
-                rows.forEach(row => {
-                  const recordDate = new Date(row.create_time).toISOString().split('T')[0]
-                  uniqueDates.add(recordDate)
-                })
-                resolve(uniqueDates.size)
-              }
+          // 计算每个用户的累计积分和减碳量
+          const [totalPoint, totalCarbon, checkDays] = await Promise.all([
+            new Promise((resolve) => {
+              db.all(`SELECT SUM(point) as total FROM carbon_record WHERE user_id = ?`, [user.user_id], (err, rows) => {
+                resolve(parseFloat(rows[0].total) || 0)
+              })
+            }),
+            new Promise((resolve) => {
+              db.all(`SELECT SUM(carbon_reduce) as total FROM carbon_record WHERE user_id = ?`, [user.user_id], (err, rows) => {
+                resolve(parseFloat(rows[0].total) || 0)
+              })
+            }),
+            new Promise((resolve) => {
+              db.all(`SELECT * FROM carbon_record WHERE user_id = ? AND record_type = '打卡'`, [user.user_id], (err, rows) => {
+                if (err || !rows || rows.length === 0) {
+                  resolve(0)
+                } else {
+                  const uniqueDates = new Set()
+                  rows.forEach(row => {
+                    const recordDate = new Date(row.create_time).toISOString().split('T')[0]
+                    uniqueDates.add(recordDate)
+                  })
+                  resolve(uniqueDates.size)
+                }
+              })
             })
-          })
+          ])
+          
+          // 更新user表
+          db.run(`UPDATE user SET total_point = ?, total_carbon = ? WHERE user_id = ?`, [totalPoint, totalCarbon, user.user_id])
+          
           processedUsers.push({
             ...user,
+            total_point: totalPoint,
+            total_carbon: totalCarbon,
             check_days: checkDays
           })
         }
-        return processedUsers
+        // 按积分降序排序
+        return processedUsers.sort((a, b) => b.total_point - a.total_point || b.total_carbon - a.total_carbon)
       }
       
       processUsers(users).then(processedUsers => {
