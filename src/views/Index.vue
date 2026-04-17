@@ -324,7 +324,16 @@ const getTodayRecord = () => {
     [userId.value, today],
     (err, rows) => {
       if (!err) {
-        todayRecord.value = rows
+        // 确保每条记录都有完整的字段
+        const processedRows = rows.map(row => ({
+          record_type: row.record_type || '',
+          sub_type: row.sub_type || '',
+          carbon_output: row.carbon_output || 0,
+          carbon_reduce: row.carbon_reduce || 0,
+          point: row.point || 0,
+          create_time: row.create_time || new Date().toISOString()
+        }))
+        todayRecord.value = processedRows
       }
     }
   )
