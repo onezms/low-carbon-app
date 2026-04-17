@@ -83,7 +83,7 @@
         <el-table-column prop="sub_type" label="详情" width="120" align="center"></el-table-column>
         <el-table-column prop="carbon_output" label="碳排放(kg)" width="100" align="center"></el-table-column>
         <el-table-column prop="carbon_reduce" label="减碳量(kg)" width="100" align="center"></el-table-column>
-        <el-table-column prop="point" label="获得积分" width="80" align="center"></el-table-column>
+        <el-table-column prop="point" label="获得积分" width="100" align="center"></el-table-column>
         <el-table-column label="记录时间" width="150" align="center">
           <template #default="scope">
             {{ formatTime(scope.row.create_time) }}
