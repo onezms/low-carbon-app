@@ -78,13 +78,13 @@
 
     <!-- 今日记录列表 -->
     <el-card class="record-list-card" title="今日记录">
-      <el-table :data="todayRecord" stripe>
-        <el-table-column prop="record_type" label="记录类型" width="120" align="center" header-align="center"></el-table-column>
-        <el-table-column prop="sub_type" label="详情" width="120" align="center" header-align="center"></el-table-column>
-        <el-table-column prop="carbon_output" label="碳排放(kg)" width="120" align="center" header-align="center"></el-table-column>
-        <el-table-column prop="carbon_reduce" label="减碳量(kg)" width="120" align="center" header-align="center"></el-table-column>
-        <el-table-column prop="point" label="获得积分" width="100" align="center" header-align="center"></el-table-column>
-        <el-table-column label="记录时间" width="180" align="center" header-align="center">
+      <el-table :data="todayRecord" stripe style="width: 100%">
+        <el-table-column prop="record_type" label="记录类型" width="100" align="center"></el-table-column>
+        <el-table-column prop="sub_type" label="详情" width="120" align="center"></el-table-column>
+        <el-table-column prop="carbon_output" label="碳排放(kg)" width="100" align="center"></el-table-column>
+        <el-table-column prop="carbon_reduce" label="减碳量(kg)" width="100" align="center"></el-table-column>
+        <el-table-column prop="point" label="获得积分" width="80" align="center"></el-table-column>
+        <el-table-column label="记录时间" width="150" align="center">
           <template #default="scope">
             {{ formatTime(scope.row.create_time) }}
           </template>
