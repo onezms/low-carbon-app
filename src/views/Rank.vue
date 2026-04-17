@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿<template>
+﻿﻿﻿﻿﻿﻿<template>
   <div class="rank-container">
     <el-row :gutter="20" class="top-three-row">
       <el-col :span="8" v-for="(item,index) in topThree" :key="item.user_id">
@@ -50,10 +50,38 @@ const topThree = ref([])
 const rankList = ref([])
 
 const getRankList = () => {
-  db.all("SELECT user_id, nickname, total_point, total_carbon, check_days FROM user ORDER BY total_point DESC, total_carbon DESC", [], (err, rows) => {
-    if (!err && rows) {
-      rankList.value = rows
-      topThree.value = rows.slice(0, 3)
+  db.all("SELECT user_id, nickname, total_point, total_carbon FROM user ORDER BY total_point DESC, total_carbon DESC", [], (err, users) => {
+    if (!err && users) {
+      const processUsers = async (userList) => {
+        const processedUsers = []
+        for (const user of userList) {
+          // 计算每个用户的打卡天数
+          const checkDays = await new Promise((resolve) => {
+            db.all(`SELECT * FROM carbon_record WHERE user_id = ? AND record_type = '打卡'`, [user.user_id], (err, rows) => {
+              if (err || !rows || rows.length === 0) {
+                resolve(0)
+              } else {
+                const uniqueDates = new Set()
+                rows.forEach(row => {
+                  const recordDate = new Date(row.create_time).toISOString().split('T')[0]
+                  uniqueDates.add(recordDate)
+                })
+                resolve(uniqueDates.size)
+              }
+            })
+          })
+          processedUsers.push({
+            ...user,
+            check_days: checkDays
+          })
+        }
+        return processedUsers
+      }
+      
+      processUsers(users).then(processedUsers => {
+        rankList.value = processedUsers
+        topThree.value = processedUsers.slice(0, 3)
+      })
     } else {
       rankList.value = []
       topThree.value = []
