@@ -57,7 +57,7 @@ const getMonthlyData = (callback) => {
 
 // 获取分类数据
 const getCategoryData = (callback) => {
-  db.all(`SELECT record_type, SUM(carbon_reduce) as total FROM carbon_record WHERE user_id = ? GROUP BY record_type`, [userId.value], (err, rows) => {
+  db.all(`SELECT sub_type, SUM(carbon_reduce) as total FROM carbon_record WHERE user_id = ? AND carbon_reduce > 0 GROUP BY sub_type`, [userId.value], (err, rows) => {
     if (err || !rows) {
       callback([{value: 1, name: '无数据'}])
       return
@@ -65,10 +65,10 @@ const getCategoryData = (callback) => {
     
     // 处理数据
     const pieData = rows
-      .filter(row => row.record_type)
+      .filter(row => row.sub_type)
       .map(row => ({
         value: parseFloat((parseFloat(row.total) || 0).toFixed(2)),
-        name: row.record_type
+        name: row.sub_type
       }))
     
     if (pieData.length === 0) {
