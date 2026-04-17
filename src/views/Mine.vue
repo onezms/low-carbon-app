@@ -129,12 +129,61 @@ const passwordForm = reactive({
   confirmPassword: ''
 })
 
+// 获取用户信息和统计数据
+const getUserInfo = () => {
+  try {
+    const userId = localStorage.getItem('userId')
+    if (!userId) return
+    
+    // 从数据库获取用户基本信息
+    db.get(`SELECT * FROM user WHERE user_id = ?`, [userId], (err, user) => {
+      if (!err && user) {
+        userInfo.nickname = user.nickname
+        userInfo.username = user.username
+        userInfo.create_time = user.create_time
+        userInfo.user_id = user.user_id
+        
+        // 重新计算总积分和减碳量
+        db.all(`SELECT point, carbon_reduce FROM carbon_record WHERE user_id = ?`, [userId], (err, rows) => {
+          if (!err && rows) {
+            const totalPoint = rows.reduce((acc, row) => acc + (parseFloat(row.point) || 0), 0)
+            const totalCarbon = rows.reduce((acc, row) => acc + (parseFloat(row.carbon_reduce) || 0), 0)
+            userInfo.total_point = totalPoint
+            userInfo.total_carbon = totalCarbon
+            
+            // 计算打卡天数
+            db.all(`SELECT * FROM carbon_record WHERE user_id = ? AND record_type = '打卡'`, [userId], (err, checkRows) => {
+              if (!err && checkRows) {
+                const uniqueDates = new Set()
+                checkRows.forEach(row => {
+                  const recordDate = new Date(row.create_time).toISOString().split('T')[0]
+                  uniqueDates.add(recordDate)
+                })
+                userInfo.check_days = uniqueDates.size
+              } else {
+                userInfo.check_days = 0
+              }
+              
+              // 更新localStorage
+              localStorage.setItem('userInfo', JSON.stringify(userInfo))
+            })
+          }
+        })
+      }
+    })
+  } catch (e) {
+    console.error('获取用户信息失败:', e)
+  }
+}
+
 onMounted(() => {
   try {
     const u = JSON.parse(localStorage.getItem('userInfo'))
     if(u) Object.assign(userInfo, u)
     // 获取当前数据存储路径
     settingsForm.dataPath = getDataPath()
+    // 从数据库实时获取最新数据
+    getUserInfo()
   } catch (e) {}
 })
 
