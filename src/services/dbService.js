@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿// 数据库服务 - 浏览器模拟数据版本
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿// 数据库服务 - 浏览器模拟数据版本
 // 使用 localStorage 作为存储后端，为网页应用
 
 let dataPath = 'localStorage'
@@ -303,16 +303,39 @@ class BrowserDB {
           }
 
           if (sql.includes('SUM(')) {
-            const sumMatch = sql.match(/SUM\(([^)]+)\)/)
-            if (sumMatch) {
-              const sumField = sumMatch[1]
-              const total = rows.reduce((acc, row) => {
-                return acc + (parseFloat(row[sumField]) || 0)
-              }, 0)
+            // 处理多个SUM函数和别名
+            const sumMatches = sql.match(/SUM\(([^)]+)\)\s+as\s+(\w+)/gi)
+            if (sumMatches) {
+              const result = {}
+              sumMatches.forEach(match => {
+                const fieldMatch = match.match(/SUM\(([^)]+)\)\s+as\s+(\w+)/i)
+                if (fieldMatch) {
+                  const sumField = fieldMatch[1]
+                  const alias = fieldMatch[2]
+                  const total = rows.reduce((acc, row) => {
+                    return acc + (parseFloat(row[sumField]) || 0)
+                  }, 0)
+                  result[alias] = total
+                }
+              })
               if (typeof callback === 'function') {
-                callback(null, [{ total }])
+                callback(null, [result])
               }
               return
+            }
+            // 处理单个SUM函数
+            else {
+              const sumMatch = sql.match(/SUM\(([^)]+)\)/)
+              if (sumMatch) {
+                const sumField = sumMatch[1]
+                const total = rows.reduce((acc, row) => {
+                  return acc + (parseFloat(row[sumField]) || 0)
+                }, 0)
+                if (typeof callback === 'function') {
+                  callback(null, [{ total }])
+                }
+                return
+              }
             }
           }
 
